@@ -91,7 +91,7 @@ def get_liked_items(rating_data, user_index, return_rated = True):
         return liked_items, rated_items
     return liked_items
 
-def item_based_kmeans(item_characteristics: pd.DataFrame, items_columns, rated_items, liked_items, number_recommendation = 10, avg_rating_column:str = 'Movie Average Rating'):
+def item_based_kmeans(item_characteristics: pd.DataFrame, items_columns, rated_items, liked_items, number_of_recommendations = 10, avg_rating_column:str = 'Movie Average Rating'):
     
     """
     essa abordagem se utiliza das caracteristicas dos itens bem avaliados por um usuario para conseguir indicar itens bem avaliados entre
@@ -126,7 +126,7 @@ def item_based_kmeans(item_characteristics: pd.DataFrame, items_columns, rated_i
         temp_data = temp_data.loc[temp_data['clusters'] == int(cluster)]
         
         temp_data.sort_values(by = avg_rating_column, ascending= False, inplace= True)
-        best = temp_data[avg_rating_column][0:number_recommendation*2]
+        best = temp_data[avg_rating_column][0:number_of_recommendations*2]
         #temp_data['Movie Name'] = \
 
         #print(temp_data.head())
@@ -134,7 +134,7 @@ def item_based_kmeans(item_characteristics: pd.DataFrame, items_columns, rated_i
         temp_data['Movie Name'] = correct_movies_names
         #print(best)
         #print(type(best))
-        best = temp_data['Movie Name'][0: number_recommendation*2]
+        best = temp_data['Movie Name'][0: number_of_recommendations*2]
         rec_items.append(best)
     
     #depois disso ja se tem os itens mais recomendados para cada item, agora eh fazer uma contagem e retornar aqueles que mais aparecem ou aqueles com a maior nota?
@@ -142,10 +142,10 @@ def item_based_kmeans(item_characteristics: pd.DataFrame, items_columns, rated_i
     rec_items = pd.concat(rec_items)
     #print(rec_items)
     counter = Counter(rec_items)
-    final_rec = counter.most_common(number_recommendation)
+    final_rec = counter.most_common(number_of_recommendations)
     return [item for item, count in final_rec]
 
-def popularity_based_recommendation(rating_data, rated_items, item_based_items = [], user_based_items = [], n =10):
+def popularity_based_recommendation(rating_data, rated_items, item_based_items = [], user_based_items = [], number_of_recommendations =10):
     
     usables = []
     
@@ -157,5 +157,38 @@ def popularity_based_recommendation(rating_data, rated_items, item_based_items =
     zeros = (usable_data == 0).sum()
     zeros = zeros.sort_values()
     
-    popular = zeros.index[:n].tolist()
+    popular = zeros.index[:number_of_recommendations].tolist()
     return popular
+
+
+
+def recommendation_system(user_index, rating_data, items_characteriscts, items, n_user = 6, n_items = 4, n_popularity = 4):
+    print('Buscando as melhores recomendacoes para você: \n')
+    # para o user based eh basicamente so aplciar a funcao 
+    user_based_items = return_user_based_recommendation(data= rating_data, user_id= user_index, number_of_recommendations= n_user)
+    
+    print('Usuarios como voces gostaram de :')    
+    for item in user_based_items:
+        print(item)
+
+    #para o item based, vai ser preciso pegar os itens que o usuario ja avaliou e aqueles que ele mais gostou 
+    liked_items, rated_items = get_liked_items(rating_data= rating_data, user_index= user_index)
+    
+    #pegar os itens do item_based
+    item_based_items =  item_based_kmeans(item_characteristics= items_characteriscts, items_columns= items, rated_items= rated_items, liked_items= liked_items, number_of_recommendations= n_items)
+    print('\nBaseado em suas ultimas avaliacoes: ')    
+    for item in item_based_items:
+        print(item)
+    
+    
+    #por fim os itens por popularidade
+    popularity_based = popularity_based_recommendation(rating_data= rating_data, rated_items= rated_items, item_based_items= item_based_items, user_based_items = user_based_items, number_of_recommendations = n_popularity)
+
+    print('\nEm alta: ')    
+    for item in popularity_based:
+        print(item)
+
+    recommended_items = user_based_items + item_based_items + popularity_based
+    
+
+    return recommended_items
