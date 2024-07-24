@@ -123,6 +123,9 @@ def item_based_kmeans(item_characteristics: pd.DataFrame, items_columns, rated_i
         cluster = model.predict(item)
         #print(int(cluster))
         temp_data = aux_data.copy()
+        
+        #print(cluster)
+        cluster = cluster[0]
         temp_data = temp_data.loc[temp_data['clusters'] == int(cluster)]
         
         temp_data.sort_values(by = avg_rating_column, ascending= False, inplace= True)
